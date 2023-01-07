@@ -31,7 +31,9 @@ for speech_time in speech_times:
     else:
         merged_speech_times[-1][1] = max(merged_speech_times[-1][1], speech_time[1])
 # add padding so nothing is cut off and whisper can recognize when the sentence changes
-speech_times_with_padding = [[max(0, speech_time[0] - 200), speech_time[1] + 200] for speech_time in merged_speech_times]
+speech_times_with_padding = [
+    [max(0, speech_time[0] - 200), speech_time[1] + 200] for speech_time in merged_speech_times
+]
 # merge again
 merged_speech_times_with_padding = []
 for speech_time in speech_times_with_padding:
@@ -46,7 +48,7 @@ segment = AudioSegment.from_file(video)
 result = AudioSegment.empty()
 # only keep the audio with speech
 for speech_time in merged_speech_times_with_padding:
-    result += segment[speech_time[0]:speech_time[1]]
+    result += segment[speech_time[0]: speech_time[1]]
 
 result.export("result.ogg", format="ogg")
 
@@ -71,6 +73,7 @@ def shift_after(subs, ms, start):
         if line.end >= start:
             line.start += ms
             line.end += ms
+
 
 # # read new subtitle file
 whisper_subs = pysubs2.load_from_whisper(result)

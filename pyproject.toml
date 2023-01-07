@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "whisper_assistant"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = ">=3.10,<3.12"
 pysubs2 = "^1.6.0"
 pydub = "^0.25.1"
 tqdm = "^4.64.1"
@@ -16,7 +16,15 @@ torch = "^1.13.1"
 numpy = "^1.24.1"
 transformers = "^4.25.1"
 ffmpeg-python = "^0.2.0"
+pyqt5 = "^5.15.7"
 
+
+[tool.poetry.group.dev.dependencies]
+pyqt5-stubs = "^5.15.6.0"
+pyinstaller = "^5.7.0"
+
+[tool.black]
+line-length = 120
 
 [build-system]
 requires = ["poetry-core"]
