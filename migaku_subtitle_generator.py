@@ -8,13 +8,75 @@
 
 import sys
 import pysubs2
-import subprocess
+import os
 from pydub import AudioSegment
+import platform
 import whisper
+from shutil import which
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (
+    QApplication,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QLabel,
+    QMessageBox,
+    QVBoxLayout,
+)
+
+
+app = QApplication([])
+
+ffprobe_command: str = ""
+ffmpeg_command: str = ""
+
+
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
+
+if os.path.isfile(resource_path("./ffprobe")):
+    ffprobe_command = resource_path("./ffprobe")
+if os.path.isfile(resource_path("./ffmpeg")):
+    ffmpeg_command = resource_path("./ffmpeg")
+if platform.system() == "Windows":
+    ffprobe_command = "ffprobe.exe"
+    ffmpeg_command = "ffmpeg.exe"
+
+
+if not ffprobe_command:
+    if temp_ffprobe_command_path := which("ffprobe"):
+        ffprobe_command = temp_ffprobe_command_path
+if not ffmpeg_command:
+    if temp_ffmpeg_command_path := which("ffmpeg"):
+        ffmpeg_command = temp_ffmpeg_command_path
+
+missing_program = ""
+if not ffprobe_command:
+    missing_program = "ffprobe"
+if not ffmpeg_command:
+    missing_program = "ffmpeg"
+if missing_program:
+    QMessageBox.critical(
+        None,
+        "Migaku Error Dialog",
+        f"It seems {missing_program} is not installed. Please retry after installing",
+        buttons=QMessageBox.Ok,
+    )
+    sys.exit(1)
+
+os.environ['PATH'] = os.path.dirname(ffmpeg_command) + os.pathsep + os.environ['PATH']
+if os.path.dirname(ffprobe_command) != os.path.dirname(ffmpeg_command):
+    os.environ['PATH'] = os.path.dirname(ffprobe_command) + os.pathsep + os.environ['PATH']
+
 
 if len(sys.argv) != 4:
     print(f"Usage: {sys.argv[0]} <whisper-model> <video> <subtitle>")
     sys.exit(1)
+
 
 whisper_model = sys.argv[1]
 video = sys.argv[2]
@@ -48,7 +110,7 @@ segment = AudioSegment.from_file(video)
 result = AudioSegment.empty()
 # only keep the audio with speech
 for speech_time in merged_speech_times_with_padding:
-    result += segment[speech_time[0]: speech_time[1]]
+    result += segment[speech_time[0] : speech_time[1]]
 
 result.export("result.ogg", format="ogg")
 
