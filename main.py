@@ -10,7 +10,7 @@ import sys
 import pysubs2
 import subprocess
 from pydub import AudioSegment
-
+import whisper
 
 if len(sys.argv) != 4:
     print(f"Usage: {sys.argv[0]} <whisper-model> <video> <subtitle>")
@@ -20,6 +20,7 @@ whisper_model = sys.argv[1]
 video = sys.argv[2]
 subtitle = sys.argv[3]
 
+print("Caluculating speech segments...")
 subs = pysubs2.load(subtitle, encoding="utf-8")
 speech_times = [[line.start, line.end] for line in subs]
 # merge overlapping or adjacent speech times
@@ -39,6 +40,7 @@ for speech_time in speech_times_with_padding:
     else:
         merged_speech_times_with_padding[-1][1] = max(merged_speech_times_with_padding[-1][1], speech_time[1])
 
+print("Trimming audio...")
 
 segment = AudioSegment.from_file(video)
 result = AudioSegment.empty()
@@ -48,10 +50,13 @@ for speech_time in merged_speech_times_with_padding:
 
 result.export("result.ogg", format="ogg")
 
+print("Running whisper...")
 # generate japanese subtitles with whisper
 # example: whisper --language ja --model large file.mkv
-subprocess.run(["whisper", "--language", "ja", "--model", whisper_model, "--no_speech_threshold", "0.9", "result.ogg"])
+model = whisper.load_model(whisper_model)
+result = model.transcribe("result.ogg", no_speech_threshold=0.9)
 
+print("re-adding timing to subtitle file...")
 # removed times with start and end
 removed_timings = []
 for i in range(len(merged_speech_times_with_padding)):
@@ -68,7 +73,7 @@ def shift_after(subs, ms, start):
             line.end += ms
 
 # # read new subtitle file
-whisper_subs = pysubs2.load("result.ogg.srt", encoding="utf-8")
+whisper_subs = pysubs2.load_from_whisper(result)
 # re-add removed timing to align with original audio
 for timing in removed_timings:
     shift_after(whisper_subs, timing[1] - timing[0], timing[0])
