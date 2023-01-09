@@ -68,9 +68,110 @@ if missing_program:
     )
     sys.exit(1)
 
-os.environ['PATH'] = os.path.dirname(ffmpeg_command) + os.pathsep + os.environ['PATH']
+os.environ["PATH"] = os.path.dirname(ffmpeg_command) + os.pathsep + os.environ["PATH"]
 if os.path.dirname(ffprobe_command) != os.path.dirname(ffmpeg_command):
-    os.environ['PATH'] = os.path.dirname(ffprobe_command) + os.pathsep + os.environ['PATH']
+    os.environ["PATH"] = os.path.dirname(ffprobe_command) + os.pathsep + os.environ["PATH"]
+
+subtitle_text_codec_names = ["srt", "ass", "ssa", "subrip", "vtt", "webvtt", "mov_text"]
+
+subtitle_file_endings_to_convert = [
+    ".ass",
+    ".ssa",
+    ".vtt",
+]
+
+video_file_endings = [
+    ".webm",
+    ".mkv",
+    ".flv",
+    ".flv",
+    ".vob",
+    ".ogv",
+    ".ogg",
+    ".drc",
+    ".gif",
+    ".gifv",
+    ".mng",
+    ".avi",
+    ".MTS",
+    ".M2TS",
+    ".TS",
+    ".mov",
+    ".qt",
+    ".wmv",
+    ".yuv",
+    ".rm",
+    ".rmvb",
+    ".viv",
+    ".asf",
+    ".amv",
+    ".mp4",
+    ".m4p",
+    ".m4v",
+    ".mpg",
+    ".mp2",
+    ".mpeg",
+    ".mpe",
+    ".mpv",
+    ".mpg",
+    ".mpeg",
+    ".m2v",
+    ".m4v",
+    ".svi",
+    ".3gp",
+    ".3g2",
+    ".mxf",
+    ".roq",
+    ".nsv",
+    ".flv",
+    ".f4v",
+    ".f4p",
+    ".f4a",
+    ".f4b",
+]
+
+audio_file_endings = [
+    ".3gp",
+    ".aa",
+    ".aac",
+    ".aax",
+    ".act",
+    ".aiff",
+    ".alac",
+    ".amr",
+    ".ape",
+    ".au",
+    ".awb",
+    ".dss",
+    ".dvf",
+    ".flac",
+    ".gsm",
+    ".ikla",
+    ".ivs",
+    ".m4a",
+    ".m4b",
+    ".m4p",
+    ".mmf",
+    ".mp3",
+    ".mpc",
+    ".msv",
+    ".nmf",
+    ".ogg",
+    ".opus",
+    ".ra",
+    ".raw",
+    ".rf64",
+    ".sln",
+    ".tta",
+    ".voc",
+    ".vox",
+    ".wav",
+    ".wma",
+    ".wv",
+    ".webm",
+    ".8svx",
+    ".cda",
+]
 
 
 if len(sys.argv) != 4:
@@ -113,6 +214,7 @@ for speech_time in merged_speech_times_with_padding:
     result += segment[speech_time[0] : speech_time[1]]
 
 result.export("result.ogg", format="ogg")
+
 
 print("Running whisper...")
 # generate japanese subtitles with whisper
