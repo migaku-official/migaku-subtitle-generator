@@ -220,7 +220,7 @@ print("Running whisper...")
 # generate japanese subtitles with whisper
 # example: whisper --language ja --model large file.mkv
 model = whisper.load_model(whisper_model)
-result = model.transcribe("result.ogg", no_speech_threshold=0.9)
+result = model.transcribe("result.ogg", verbose=True, no_speech_threshold=0.9)
 
 print("re-adding timing to subtitle file...")
 # removed times with start and end
@@ -244,6 +244,36 @@ whisper_subs = pysubs2.load_from_whisper(result)
 # re-add removed timing to align with original audio
 for timing in removed_timings:
     shift_after(whisper_subs, timing[1] - timing[0], timing[0])
+
+whisper_subs.save(f"{video}-original.srt", encoding="utf-8")
+
+
+# align with original subtitle file
+# loop through generated subtitle.
+# For each line check the provided subtitle if a line starts at the same timestamp.
+# If yes, keep it, if not align it to the closest line in the provided sub except if a line already starts at that position (i.e. something already got aligned there).
+# We are going to do it two times, check for lines that are already in perfect or almost perfect positions and use these as anchors.
+# So a line that should be moved to an anchor would be kept in place instead
+print("aligning with original subtitle file...")
+
+
+def align_if_offset_smaller_than(offset: int):
+    for whisper_line in whisper_subs:
+        start_times_original = [line.start for line in subs]
+        if any(whisper_line.start - start < offset for start in start_times_original):
+            new_start = min(start_times_original, key=lambda x: abs(x - whisper_line.start))
+            if any(line.start == new_start for line in whisper_subs):
+                # print(f"keeping {whisper_line.text} because {new_start} is already taken")
+                continue
+            shift_time = new_start - whisper_line.start
+            print(f"aligning {whisper_line.text} to {new_start}")
+            whisper_line.start += shift_time
+            whisper_line.end += shift_time
+
+
+for offset in range(5, 3000, 20):
+    align_if_offset_smaller_than(offset)
+
 
 # save the modified subtitle file
 whisper_subs.save(f"{video}.srt", encoding="utf-8")
