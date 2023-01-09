@@ -260,7 +260,7 @@ print("aligning with original subtitle file...")
 def align_if_offset_smaller_than(offset: int):
     for whisper_line in whisper_subs:
         start_times_original = [line.start for line in subs]
-        if any(whisper_line.start - start < offset for start in start_times_original):
+        if any(abs(whisper_line.start - start) < offset for start in start_times_original):
             new_start = min(start_times_original, key=lambda x: abs(x - whisper_line.start))
             if any(line.start == new_start for line in whisper_subs):
                 # print(f"keeping {whisper_line.text} because {new_start} is already taken")
@@ -271,9 +271,22 @@ def align_if_offset_smaller_than(offset: int):
             whisper_line.end += shift_time
 
 
-for offset in range(5, 3000, 20):
+for offset in range(5, 4000, 20):
+    print(f"offset: {offset}")
     align_if_offset_smaller_than(offset)
 
+# iterate through subs and cut off end time if it overlaps with the following line
+
+print("fixing overlapping lines")
+whisper_subs.sort()
+
+for idx, line in enumerate(whisper_subs):
+    try:
+        next_line = whisper_subs[idx + 1]
+    except IndexError:
+        continue
+    if line.end > next_line.start:
+        line.end = next_line.start
 
 # save the modified subtitle file
 whisper_subs.save(f"{video}.srt", encoding="utf-8")
