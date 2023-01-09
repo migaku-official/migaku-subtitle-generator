@@ -220,7 +220,13 @@ print("Running whisper...")
 # generate japanese subtitles with whisper
 # example: whisper --language ja --model large file.mkv
 model = whisper.load_model(whisper_model)
-result = model.transcribe("result.ogg", verbose=True, no_speech_threshold=0.9)
+result = model.transcribe(
+    "result.ogg",
+    beam_size=5,
+    best_of=5,
+    verbose=True,
+    no_speech_threshold=0.9,
+)
 
 print("re-adding timing to subtitle file...")
 # removed times with start and end
