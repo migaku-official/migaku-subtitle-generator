@@ -174,14 +174,15 @@ audio_file_endings = [
 ]
 
 
-if len(sys.argv) != 4:
-    print(f"Usage: {sys.argv[0]} <whisper-model> <video> <subtitle>")
+if len(sys.argv) not in [4, 5]:
+    print(f"Usage: {sys.argv[0]} <whisper-model> <video> <subtitle> [<initial_prompt>]")
     sys.exit(1)
 
 
 whisper_model = sys.argv[1]
 video = sys.argv[2]
 subtitle = sys.argv[3]
+initial_prompt = sys.argv[4] if len(sys.argv) == 5 else ""
 
 print("Caluculating speech segments...")
 subs = pysubs2.load(subtitle, encoding="utf-8")
@@ -226,6 +227,7 @@ result = model.transcribe(
     best_of=5,
     verbose=True,
     no_speech_threshold=0.9,
+    initial_prompt=initial_prompt,
 )
 
 print("re-adding timing to subtitle file...")
