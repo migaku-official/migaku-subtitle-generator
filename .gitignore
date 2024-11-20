@@ -4,3 +4,5 @@
 *.mkv
 *.mp3
 *.ogg
+.aider*
+.env
