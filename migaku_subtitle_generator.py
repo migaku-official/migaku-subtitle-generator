@@ -14,20 +14,6 @@ import platform
 import whisper
 from shutil import which
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (
-    QApplication,
-    QComboBox,
-    QDialog,
-    QDialogButtonBox,
-    QLabel,
-    QMessageBox,
-    QVBoxLayout,
-)
-
-
-app = QApplication([])
-
 ffprobe_command: str = ""
 ffmpeg_command: str = ""
 
@@ -60,12 +46,7 @@ if not ffprobe_command:
 if not ffmpeg_command:
     missing_program = "ffmpeg"
 if missing_program:
-    QMessageBox.critical(
-        None,
-        "Migaku Error Dialog",
-        f"It seems {missing_program} is not installed. Please retry after installing",
-        buttons=QMessageBox.Ok,
-    )
+    print("It seems " + missing_program + " is not installed. Please retry after installing")
     sys.exit(1)
 
 os.environ["PATH"] = os.path.dirname(ffmpeg_command) + os.pathsep + os.environ["PATH"]
