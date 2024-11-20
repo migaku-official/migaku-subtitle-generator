@@ -174,15 +174,16 @@ audio_file_endings = [
 ]
 
 
-if len(sys.argv) not in [4, 5]:
-    print(f"Usage: {sys.argv[0]} <whisper-model> <video> <subtitle> [<initial_prompt>]")
+if len(sys.argv) not in [5, 6]:
+    print(f"Usage: {sys.argv[0]} <whisper-model> <languagecode> <video> <subtitle> [<initial_prompt>]")
     sys.exit(1)
 
 
 whisper_model = sys.argv[1]
-video = sys.argv[2]
-subtitle = sys.argv[3]
-initial_prompt = sys.argv[4] if len(sys.argv) == 5 else ""
+language_code = sys.argv[2]
+video = sys.argv[3]
+subtitle = sys.argv[4]
+initial_prompt = sys.argv[5] if len(sys.argv) == 6 else ""
 
 print("Caluculating speech segments...")
 subs = pysubs2.load(subtitle, encoding="utf-8")
@@ -219,23 +220,24 @@ result.export("result.ogg", format="ogg")
 
 print("Running whisper...")
 # generate japanese subtitles with whisper
-# example: whisper --language ja --model large file.mkv
 model = whisper.load_model(whisper_model)
 if initial_prompt:
-    result = model.transcribe(
+    whisper_result = model.transcribe(
         "result.ogg",
         beam_size=5,
         best_of=5,
         verbose=True,
+        language=language_code,
         no_speech_threshold=0.9,
         initial_prompt=initial_prompt,
     )
 else:
-    result = model.transcribe(
+    whisper_result = model.transcribe(
         "result.ogg",
         beam_size=5,
         best_of=5,
         verbose=True,
+        language=language_code,
         no_speech_threshold=0.9,
     )
 
@@ -257,7 +259,7 @@ def shift_after(subs, ms, start):
 
 
 # # read new subtitle file
-whisper_subs = pysubs2.load_from_whisper(result)
+whisper_subs = pysubs2.load_from_whisper(whisper_result)
 # re-add removed timing to align with original audio
 for timing in removed_timings:
     shift_after(whisper_subs, timing[1] - timing[0], timing[0])
@@ -272,40 +274,40 @@ whisper_subs.save(f"{video}-original.srt", encoding="utf-8")
 print("aligning with original subtitle file...")
 
 
-def align_if_offset_smaller_than(offset: int):
+def align_if_offset_smaller_than(max_offset: int):
     for current_line in whisper_subs:
         # Skip the current line if it already has the same start time as a line in the eng_subs list
         if any(current_line.start == line.start for line in subs):
             continue
         # Get a list of start times for the lines in the eng_subs list
         original_start_times = [line.start for line in subs]
-        # Check if any of the lines in the eng_subs list have a start time within the specified offset of the current line
-        if any(abs(current_line.start - start_time) < offset for start_time in original_start_times):
+        # Check if any of the lines in the eng_subs list have a start time within the specified max_offset of the current line
+        if any(abs(current_line.start - start_time) < max_offset for start_time in original_start_times):
             # Find the line in the eng_subs list with the start time closest to the current line's start time
             closest_start_time = min(original_start_times, key=lambda x: abs(x - current_line.start))
             # Skip the current line if there's already a line in the whisper_subs list with the same start time
             if any(line.start == closest_start_time for line in whisper_subs):
-                # Check for a line in the other direction (either earlier or later) within the offset
+                # Check for a line in the other direction (either earlier or later) within the max_offset
                 other_direction_times = (
                     [
                         time
                         for time in original_start_times
-                        if time > current_line.start and abs(time - current_line.start) < offset
+                        if time > current_line.start and abs(time - current_line.start) < max_offset
                     ]
                     if closest_start_time < current_line.start
                     else [
                         time
                         for time in original_start_times
-                        if time < current_line.start and abs(time - current_line.start) < offset
+                        if time < current_line.start and abs(time - current_line.start) < max_offset
                     ]
                 )
-                # If there's a line in the other direction within the offset, use it as the new start time
+                # If there's a line in the other direction within the max_offset, use it as the new start time
                 if other_direction_times:
                     closest_start_time = min(other_direction_times, key=lambda x: abs(x - current_line.start))
                     # Skip the current line if there's already a line in the whisper_subs list with the same start time
                     if any(line.start == closest_start_time for line in whisper_subs):
                         continue
-                # If there isn't a line in the other direction within the offset, skip the current line
+                # If there isn't a line in the other direction within the max_offset, skip the current line
                 else:
                     continue
             shift_time = closest_start_time - current_line.start
@@ -313,9 +315,9 @@ def align_if_offset_smaller_than(offset: int):
             current_line.end += shift_time
 
 
-for offset in range(5, 4000, 20):
-    print(f"offset: {offset}")
-    align_if_offset_smaller_than(offset)
+for max_offset in range(5, 15000, 20):
+    print(f"max_offset: {max_offset}")
+    align_if_offset_smaller_than(max_offset)
 
 # iterate through subs and cut off end time if it overlaps with the following line
 
